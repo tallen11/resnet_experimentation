@@ -1,6 +1,7 @@
 from resnet import ResNet
 from data_batcher import DataBatcher
 from time import time
+import os
 import tensorflow as tf
 
 model = ResNet(5)
@@ -37,7 +38,7 @@ with tf.Session() as session:
             train_accuracy_data.append(train_accuracy)
 
             print("Epoch %i \t| test_acc: %f | train_acc: %f | time: %f" % (epoch_index, accuracy, train_accuracy, time() - epoch_start_time))
-            saver.save(session, os.path.join("checkpoints", model.name + ".ckpt"))
+            saver.save(session, os.path.join("checkpoints/resnet_basic.ckpt"))
             batcher.prepare_epoch()
             step_index = 0
             epoch_start_time = time()
