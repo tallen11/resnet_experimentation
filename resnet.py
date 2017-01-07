@@ -66,6 +66,8 @@ class ResNet:
         W_conv2 = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1))
         b_conv2 = tf.Variable(tf.constant(0.1, shape=[filter_shape[3]]))
         l_conv2 = tf.nn.conv2d(l_activ1, W_conv2, strides=[1,1,1,1], padding="SAME")
-        l_activ2 = tf.nn.relu(l_conv2 + b_conv2)
 
-        return l_activ2 + unit_input
+        skip_sum = l_conv2 + unit_input
+        l_activ2 = tf.nn.relu(skip_sum + b_conv2)
+
+        return l_activ2
