@@ -1,50 +1,61 @@
 import tensorflow as tf
 
 class ResNet:
-    def __init__(self, res_unit_count):
+    def __init__(self, n):
         self.inputs = tf.placeholder(tf.float32, shape=[None,32,32,3])
         self.labels = tf.placeholder(tf.float32, shape=[None,10])
-        self.dropout = tf.placeholder(tf.float32)
 
-        W_conv1 = tf.Variable(tf.truncated_normal([5,5,3,32], stddev=0.1))
-        b_conv1 = tf.Variable(tf.constant(0.1, shape=[32]))
+        W_conv1 = tf.Variable(tf.truncated_normal([3,3,3,16], stddev=0.1))
+        b_conv1 = tf.Variable(tf.constant(0.1, shape=[16]))
         l_conv1 = tf.nn.conv2d(self.inputs, W_conv1, strides=[1,1,1,1], padding="SAME")
-        l_activ1 = tf.nn.relu(l_conv1 + b_conv1)
-        l_pool1 = tf.nn.max_pool(l_activ1, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
+        l_conv1 = tf.nn.relu(l_conv1 + b_conv1)
 
-        u_res1 = self.__residual_unit(l_pool1, [3,3,32,32])
-        previous_res = u_res1
-        for i in range(res_unit_count - 1):
+        previous_res = l_conv1
+        for i in range(n):
+            u_res = self.__residual_unit(previous_res, [3,3,16,16])
+            previous_res = u_res
+
+        W_downsample1 = tf.Variable(tf.truncated_normal([3,3,16,32], stddev=0.1))
+        b_downsample1 = tf.Variable(tf.constant(0.1, shape=[32]))
+        l_downsample1 = tf.nn.conv2d(previous_res, W_downsample1, strides=[1,2,2,1], padding="SAME")
+        l_downsample1 = tf.nn.relu(l_downsample1 + b_downsample1)
+
+        previous_res = l_downsample1
+        for i in range(n):
             u_res = self.__residual_unit(previous_res, [3,3,32,32])
             previous_res = u_res
 
-        l_poolf = tf.nn.max_pool(previous_res, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
+        W_downsample2 = tf.Variable(tf.truncated_normal([3,3,32,64], stddev=0.1))
+        b_downsample2 = tf.Variable(tf.constant(0.1, shape=[64]))
+        l_downsample2 = tf.nn.conv2d(previous_res, W_downsample2, strides=[1,2,2,1], padding="SAME")
+        l_downsample2 = tf.nn.relu(l_downsample2 + b_downsample2)
+
+        previous_res = l_downsample2
+        for i in range(n):
+            u_res = self.__residual_unit(previous_res, [3,3,64,64])
+            previous_res = u_res
+
+        l_poolf = tf.nn.avg_pool(previous_res, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
         l_poolf_shape = l_poolf.get_shape()
         l_fc_size = int(l_poolf_shape[1] * l_poolf_shape[2] * l_poolf_shape[3])
 
-        W_fc1 = tf.Variable(tf.truncated_normal([l_fc_size,1024], stddev=0.1))
-        b_fc1 = tf.Variable(tf.constant(0.1, shape=[1024]))
+        W_fc1 = tf.Variable(tf.truncated_normal([l_fc_size,10], stddev=0.1))
+        b_fc1 = tf.Variable(tf.constant(0.1, shape=[10]))
         l_fc1 = tf.reshape(l_poolf, [-1,l_fc_size])
         l_fc1 = tf.nn.relu(tf.nn.xw_plus_b(l_fc1, W_fc1, b_fc1))
 
-        l_dropout = tf.nn.dropout(l_fc1, self.dropout)
-
-        W_fc_s = tf.Variable(tf.truncated_normal([1024,10], stddev=0.1))
-        b_fc_s = tf.Variable(tf.constant(0.1, shape=[10]))
-        l_fc_s = tf.nn.xw_plus_b(l_dropout, W_fc_s, b_fc_s)
-
-        self.probabilities = tf.nn.softmax(l_fc_s)
+        self.probabilities = tf.nn.softmax(l_fc1)
         self.prediction = tf.argmax(self.probabilities, axis=1)
         self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.prediction, tf.argmax(self.labels, axis=1)), tf.float32))
 
-        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(l_fc_s, self.labels))
+        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(l_fc1, self.labels))
         self.train = tf.train.AdamOptimizer(1e-4).minimize(loss)
 
     def train_model(self, session, inputs, labels):
-        session.run(self.train, feed_dict={self.inputs: inputs, self.labels: labels, self.dropout: 0.5})
+        session.run(self.train, feed_dict={self.inputs: inputs, self.labels: labels})
 
     def get_accuracy(self, session, inputs, labels):
-        return session.run(self.accuracy, feed_dict={self.inputs: inputs, self.labels: labels, self.dropout: 1.0})
+        return session.run(self.accuracy, feed_dict={self.inputs: inputs, self.labels: labels})
 
     def __residual_unit(self, unit_input, filter_shape):
         W_conv1 = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1))
@@ -52,8 +63,6 @@ class ResNet:
         l_conv1 = tf.nn.conv2d(unit_input, W_conv1, strides=[1,1,1,1], padding="SAME")
         l_activ1 = tf.nn.relu(l_conv1 + b_conv1)
 
-        # if halve_filters:
-        #     filter_shape[2] = filter_shape[2] // 2
         W_conv2 = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1))
         b_conv2 = tf.Variable(tf.constant(0.1, shape=[filter_shape[3]]))
         l_conv2 = tf.nn.conv2d(l_activ1, W_conv2, strides=[1,1,1,1], padding="SAME")
