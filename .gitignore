@@ -1,1 +1,3 @@
 __pycache__/
+cifar/
+.DS_Store
