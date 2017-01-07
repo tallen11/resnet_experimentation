@@ -5,12 +5,12 @@ class ResNet:
         self.inputs = tf.placeholder(tf.float32, shape=[None,32,32,3])
         self.labels = tf.placeholder(tf.float32, shape=[None,10])
 
-        W_conv1 = tf.Variable(tf.truncated_normal([3,3,3,16], stddev=0.1))
-        b_conv1 = tf.Variable(tf.constant(0.1, shape=[16]))
-        l_conv1 = tf.nn.conv2d(self.inputs, W_conv1, strides=[1,1,1,1], padding="SAME")
-        l_conv1 = tf.nn.relu(l_conv1 + b_conv1)
+        W_conv = tf.Variable(tf.truncated_normal([3,3,3,16], stddev=0.1))
+        b_conv = tf.Variable(tf.constant(0.1, shape=[16]))
+        l_conv = tf.nn.conv2d(self.inputs, W_conv, strides=[1,1,1,1], padding="SAME")
+        l_conv = tf.nn.relu(l_conv + b_conv)
 
-        previous_res = l_conv1
+        previous_res = l_conv
         for i in range(n):
             u_res = self.__residual_unit(previous_res, [3,3,16,16])
             previous_res = u_res
