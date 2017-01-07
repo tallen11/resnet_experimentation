@@ -38,17 +38,21 @@ class ResNet:
         l_poolf = tf.nn.avg_pool(previous_res, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
         l_poolf_shape = l_poolf.get_shape()
         l_fc_size = int(l_poolf_shape[1] * l_poolf_shape[2] * l_poolf_shape[3])
+        l_pool_flat = tf.reshape(l_poolf, [-1,l_fc_size])
 
-        W_fc1 = tf.Variable(tf.truncated_normal([l_fc_size,10], stddev=0.1))
-        b_fc1 = tf.Variable(tf.constant(0.1, shape=[10]))
-        l_fc1 = tf.reshape(l_poolf, [-1,l_fc_size])
-        l_fc1 = tf.nn.relu(tf.nn.xw_plus_b(l_fc1, W_fc1, b_fc1))
+        W_fc1 = tf.Variable(tf.truncated_normal([l_fc_size,512], stddev=0.1))
+        b_fc1 = tf.Variable(tf.constant(0.1, shape=[512]))
+        l_fc1 = tf.nn.relu(tf.nn.xw_plus_b(l_pool_flat, W_fc1, b_fc1))
 
-        self.probabilities = tf.nn.softmax(l_fc1)
+        W_fc2 = tf.Variable(tf.truncated_normal([512,10], stddev=0.1))
+        b_fc2 = tf.Variable(tf.constant(0.1, shape=[10]))
+        l_fc2 = tf.nn.relu(tf.nn.xw_plus_b(l_fc1, W_fc2, b_fc2))
+
+        self.probabilities = tf.nn.softmax(l_fc2)
         self.prediction = tf.argmax(self.probabilities, axis=1)
         self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.prediction, tf.argmax(self.labels, axis=1)), tf.float32))
 
-        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(l_fc1, self.labels))
+        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(l_fc2, self.labels))
         self.train = tf.train.AdamOptimizer(1e-4).minimize(loss)
 
     def train_model(self, session, inputs, labels):
