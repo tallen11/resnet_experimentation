@@ -12,15 +12,13 @@ class ResNet:
         l_activ1 = tf.nn.relu(l_conv1 + b_conv1)
         l_pool1 = tf.nn.max_pool(l_activ1, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
 
-        u_res1, u_out1 = self.__residual_unit(l_pool1, l_pool1, [3,3,32,32])
-        prev_ouput = u_res1
-        prev_concat = u_out1
+        u_res1 = self.__residual_unit(l_pool1, [3,3,32,32])
+        previous_res = u_res1
         for i in range(res_unit_count - 1):
-            u_res, u_out = self.__residual_unit(prev_concat, prev_ouput, [3,3,64,32], halve_filters=True)
-            prev_ouput = u_res
-            prev_concat = u_out
+            u_res = self.__residual_unit(previous_res, [3,3,32,32])
+            previous_res = u_res
 
-        l_poolf = tf.nn.max_pool(prev_concat, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
+        l_poolf = tf.nn.max_pool(previous_res, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
         l_poolf_shape = l_poolf.get_shape()
         l_fc_size = int(l_poolf_shape[1] * l_poolf_shape[2] * l_poolf_shape[3])
 
@@ -48,17 +46,17 @@ class ResNet:
     def get_accuracy(self, session, inputs, labels):
         return session.run(self.accuracy, feed_dict={self.inputs: inputs, self.labels: labels, self.dropout: 1.0})
 
-    def __residual_unit(self, unit_input, prev_ouput, filter_shape, halve_filters=False):
+    def __residual_unit(self, unit_input, filter_shape):
         W_conv1 = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1))
         b_conv1 = tf.Variable(tf.constant(0.1, shape=[filter_shape[3]]))
         l_conv1 = tf.nn.conv2d(unit_input, W_conv1, strides=[1,1,1,1], padding="SAME")
         l_activ1 = tf.nn.relu(l_conv1 + b_conv1)
 
-        if halve_filters:
-            filter_shape[2] = filter_shape[2] // 2
+        # if halve_filters:
+        #     filter_shape[2] = filter_shape[2] // 2
         W_conv2 = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1))
         b_conv2 = tf.Variable(tf.constant(0.1, shape=[filter_shape[3]]))
         l_conv2 = tf.nn.conv2d(l_activ1, W_conv2, strides=[1,1,1,1], padding="SAME")
         l_activ2 = tf.nn.relu(l_conv2 + b_conv2)
 
-        return l_activ2, tf.concat(3, [l_activ2, prev_ouput])
+        return l_activ2 + unit_input
