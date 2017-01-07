@@ -1,10 +1,11 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 from resnet import ResNet
 from data_batcher import DataBatcher
 from time import time
-import os
 import tensorflow as tf
 
-model = ResNet(5)
+model = ResNet(20)
 
 batcher = DataBatcher("cifar")
 saver = tf.train.Saver()
