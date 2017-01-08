@@ -9,7 +9,7 @@ class ResNet:
         b_conv = tf.Variable(tf.constant(0.1, shape=[16]))
         l_conv = tf.nn.conv2d(self.inputs, W_conv, strides=[1,1,1,1], padding="SAME")
         l_conv = tf.nn.relu(l_conv + b_conv)
-        l_conv = tf.contrib.layers.batch_norm(l_conv)
+        # l_conv = tf.contrib.layers.batch_norm(l_conv)
 
         previous_res = l_conv
         for i in range(n):
@@ -53,10 +53,12 @@ class ResNet:
         self.prediction = tf.argmax(self.probabilities, axis=1)
         self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.prediction, tf.argmax(self.labels, axis=1)), tf.float32))
 
-        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(l_fc2, self.labels))
-        self.train = tf.train.AdamOptimizer(1e-4).minimize(loss)
+        self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(l_fc2, self.labels))
+        self.train = tf.train.AdamOptimizer(1e-4).minimize(self.loss)
 
     def train_model(self, session, inputs, labels):
+        l = session.run(self.loss, feed_dict={self.inputs: inputs, self.labels: labels})
+        print(l)
         session.run(self.train, feed_dict={self.inputs: inputs, self.labels: labels})
 
     def get_accuracy(self, session, inputs, labels):
