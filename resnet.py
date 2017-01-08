@@ -9,6 +9,7 @@ class ResNet:
         b_conv = tf.Variable(tf.constant(0.1, shape=[16]))
         l_conv = tf.nn.conv2d(self.inputs, W_conv, strides=[1,1,1,1], padding="SAME")
         l_conv = tf.nn.relu(l_conv + b_conv)
+        l_conv = tf.contrib.layers.batch_norm(l_conv)
 
         previous_res = l_conv
         for i in range(n):

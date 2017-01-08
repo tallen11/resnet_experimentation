@@ -5,7 +5,7 @@ from data_batcher import DataBatcher
 from time import time
 import tensorflow as tf
 
-model = ResNet(1)
+model = ResNet(3)
 
 batcher = DataBatcher("cifar")
 saver = tf.train.Saver()
