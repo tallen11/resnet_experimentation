@@ -56,7 +56,7 @@ class ResNet:
         self.prediction = tf.argmax(self.probabilities, axis=1)
         self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.prediction, tf.argmax(self.labels, axis=1)), tf.float32))
 
-        self.loss = tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits(l_fc2, self.labels))
+        self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(l_fc2, self.labels))
         self.train = tf.train.AdamOptimizer(0.1).minimize(self.loss)
 
     def train_model(self, session, inputs, labels):
